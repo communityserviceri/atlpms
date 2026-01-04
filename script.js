@@ -9,6 +9,7 @@ import {
 const firebaseConfig = {
     apiKey: "AIzaSyD9lfH7kslpRJNlwMfPVjx3Rnx2diF3MM4",
     authDomain: "atlpms.firebaseapp.com",
+    databaseURL: "https://atlpms-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "atlpms",
     storageBucket: "atlpms.firebasestorage.app",
     messagingSenderId: "3454561362",
@@ -426,3 +427,4 @@ function getValue(id) {
     const el = document.getElementById(id);
     return el ? el.value : '';
 }
+

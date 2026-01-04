@@ -1,5 +1,4 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
 import { 
     getDatabase, ref, set, push, onValue, update, remove 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -18,7 +17,6 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 const db = getDatabase(app);
 const auth = getAuth(app);
 
@@ -26,26 +24,8 @@ let currentUser = null;
 let currentProjectId = null;
 let projectsData = {};
 
-let els = {};
-
 document.addEventListener('DOMContentLoaded', () => {
-    els = {
-        loading: document.getElementById('loadingOverlay'),
-        viewLogin: document.getElementById('view-login'),
-        viewApp: document.getElementById('app-container'),
-        viewDashboard: document.getElementById('view-dashboard'),
-        viewDetail: document.getElementById('view-project-detail'),
-        loginForm: document.getElementById('loginForm'),
-        loginError: document.getElementById('loginError'),
-        navDashboard: document.getElementById('btnNavDashboard'),
-        sidebarList: document.getElementById('sidebarProjectList'),
-        projectsGrid: document.getElementById('projectsGrid'),
-        tasksContainer: document.getElementById('tasksContainer'),
-        statTotal: document.getElementById('statTotalProjects'),
-        statActive: document.getElementById('statActive'),
-        statCompleted: document.getElementById('statCompleted')
-    };
-
+    
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUser = user;
@@ -56,14 +36,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    if(els.loginForm) els.loginForm.addEventListener('submit', handleLogin);
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            handleLogin();
+        });
+    }
     
     const btnLogout = document.getElementById('btnLogout');
     if(btnLogout) btnLogout.addEventListener('click', () => {
         signOut(auth).then(() => window.location.reload());
     });
 
-    if(els.navDashboard) els.navDashboard.addEventListener('click', () => switchView('dashboard'));
+    const btnNavDash = document.getElementById('btnNavDashboard');
+    if(btnNavDash) btnNavDash.addEventListener('click', () => switchView('dashboard'));
+    
     const btnBack = document.getElementById('btnBackToDash');
     if(btnBack) btnBack.addEventListener('click', () => switchView('dashboard'));
     
@@ -71,17 +59,27 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function showLogin() {
-    if(els.loading) els.loading.style.display = 'none';
-    if(els.viewLogin) els.viewLogin.style.display = 'flex';
-    if(els.viewApp) els.viewApp.style.display = 'none';
+    const loading = document.getElementById('loadingOverlay');
+    const viewLogin = document.getElementById('view-login');
+    const viewApp = document.getElementById('app-container');
+
+    if(loading) loading.style.display = 'none';
+    if(viewLogin) viewLogin.style.display = 'flex';
+    if(viewApp) viewApp.style.display = 'none';
 }
 
 function handleLogin() {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
+    const emailField = document.getElementById('email');
+    const passField = document.getElementById('password');
+    const errorMsg = document.getElementById('loginError');
     const btn = document.getElementById('btnLogin');
 
-    if(els.loginError) els.loginError.innerText = "";
+    if (!emailField || !passField) return;
+
+    const email = emailField.value;
+    const password = passField.value;
+
+    if(errorMsg) errorMsg.innerText = "";
     
     if(btn) {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
@@ -90,10 +88,11 @@ function handleLogin() {
 
     signInWithEmailAndPassword(auth, email, password)
         .then(() => {
+            // Success handled by onAuthStateChanged
         })
         .catch((error) => {
             console.error(error);
-            if(els.loginError) els.loginError.innerText = "Login failed. Check your credentials.";
+            if(errorMsg) errorMsg.innerText = "Login failed. Check your credentials.";
             if(btn) {
                 btn.innerHTML = 'Sign In';
                 btn.disabled = false;
@@ -102,9 +101,13 @@ function handleLogin() {
 }
 
 function initApp(user) {
-    if(els.viewLogin) els.viewLogin.style.display = 'none';
-    if(els.viewApp) els.viewApp.style.display = 'flex';
-    if(els.loading) els.loading.style.display = 'none';
+    const loading = document.getElementById('loadingOverlay');
+    const viewLogin = document.getElementById('view-login');
+    const viewApp = document.getElementById('app-container');
+
+    if(viewLogin) viewLogin.style.display = 'none';
+    if(viewApp) viewApp.style.display = 'flex';
+    if(loading) loading.style.display = 'none';
 
     const emailDisp = document.getElementById('userEmailDisplay');
     const idDisp = document.getElementById('userIdDisplay');
@@ -129,30 +132,43 @@ function initApp(user) {
 }
 
 function switchView(viewName) {
+    const viewDash = document.getElementById('view-dashboard');
+    const viewDetail = document.getElementById('view-project-detail');
+    const navDash = document.getElementById('btnNavDashboard');
+
     if (viewName === 'dashboard') {
-        els.viewDashboard.style.display = 'block';
-        els.viewDetail.style.display = 'none';
-        els.navDashboard.classList.add('active');
+        if(viewDash) viewDash.style.display = 'block';
+        if(viewDetail) viewDetail.style.display = 'none';
+        if(navDash) navDash.classList.add('active');
         currentProjectId = null;
     } else {
-        els.viewDashboard.style.display = 'none';
-        els.viewDetail.style.display = 'block';
-        els.navDashboard.classList.remove('active');
+        if(viewDash) viewDash.style.display = 'none';
+        if(viewDetail) viewDetail.style.display = 'block';
+        if(navDash) navDash.classList.remove('active');
     }
 }
 
 function renderDashboard() {
-    els.projectsGrid.innerHTML = '';
-    els.sidebarList.innerHTML = '';
+    const grid = document.getElementById('projectsGrid');
+    const sidebar = document.getElementById('sidebarProjectList');
+    
+    if(!grid || !sidebar) return;
+
+    grid.innerHTML = '';
+    sidebar.innerHTML = '';
 
     const projectsArray = Object.keys(projectsData).map(key => ({
         id: key,
         ...projectsData[key]
     }));
 
-    if(els.statTotal) els.statTotal.innerText = projectsArray.length;
-    if(els.statActive) els.statActive.innerText = projectsArray.filter(p => p.status === 'On Progress').length;
-    if(els.statCompleted) els.statCompleted.innerText = projectsArray.filter(p => Math.round(calculateProgress(p)) === 100).length;
+    const statTotal = document.getElementById('statTotalProjects');
+    const statActive = document.getElementById('statActive');
+    const statCompleted = document.getElementById('statCompleted');
+
+    if(statTotal) statTotal.innerText = projectsArray.length;
+    if(statActive) statActive.innerText = projectsArray.filter(p => p.status === 'On Progress').length;
+    if(statCompleted) statCompleted.innerText = projectsArray.filter(p => Math.round(calculateProgress(p)) === 100).length;
 
     projectsArray.forEach(p => {
         const progress = calculateProgress(p);
@@ -161,7 +177,7 @@ function renderDashboard() {
         sideItem.className = 'nav-btn';
         sideItem.innerHTML = `<i class="fas fa-folder"></i> ${p.name}`;
         sideItem.onclick = () => openProject(p.id);
-        els.sidebarList.appendChild(sideItem);
+        sidebar.appendChild(sideItem);
 
         const card = document.createElement('div');
         card.className = 'project-card';
@@ -182,7 +198,7 @@ function renderDashboard() {
                 <span>${Math.round(progress)}%</span>
             </div>
         `;
-        els.projectsGrid.appendChild(card);
+        grid.appendChild(card);
     });
 }
 
@@ -197,109 +213,123 @@ function renderProjectDetail(id) {
     if (!project) return;
 
     const progress = calculateProgress(project);
+    const container = document.getElementById('tasksContainer');
 
-    document.getElementById('detailProjectTitle').innerText = project.name;
-    const statusBadge = document.getElementById('detailProjectStatus');
-    statusBadge.innerText = project.status;
-    statusBadge.className = `p-status ${project.status === 'On Progress' ? 'on-progress' : 'planning'}`;
+    const title = document.getElementById('detailProjectTitle');
+    const status = document.getElementById('detailProjectStatus');
+    const dates = document.getElementById('detailProjectDates');
+    const pct = document.getElementById('detailProjectPercent');
+    const bar = document.getElementById('detailProjectProgress');
 
-    document.getElementById('detailProjectDates').innerText = `${project.start} - ${project.end}`;
-    document.getElementById('detailProjectPercent').innerText = `${Math.round(progress)}%`;
-    document.getElementById('detailProjectProgress').style.width = `${progress}%`;
+    if(title) title.innerText = project.name;
+    if(status) {
+        status.innerText = project.status;
+        status.className = `p-status ${project.status === 'On Progress' ? 'on-progress' : 'planning'}`;
+    }
+    if(dates) dates.innerText = `${project.start} - ${project.end}`;
+    if(pct) pct.innerText = `${Math.round(progress)}%`;
+    if(bar) bar.style.width = `${progress}%`;
 
     const btnDel = document.getElementById('btnDeleteProject');
     if(btnDel) btnDel.onclick = () => deleteProject(id);
 
-    els.tasksContainer.innerHTML = '';
-    
-    if (!project.tasks) {
-        els.tasksContainer.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">No tasks yet. Create one above.</div>';
-        return;
-    }
-
-    Object.keys(project.tasks).forEach(taskId => {
-        const task = project.tasks[taskId];
-        const taskProgress = calculateTaskProgress(task);
-        const progressColor = taskProgress === 100 ? 'var(--success)' : 'var(--primary)';
-        
-        const div = document.createElement('div');
-        div.className = 'task-block';
-        
-        let subtasksHtml = '';
-        if (task.subtasks) {
-            Object.keys(task.subtasks).forEach(subId => {
-                const sub = task.subtasks[subId];
-                subtasksHtml += `
-                    <li class="subtask-item">
-                        <input type="checkbox" ${sub.completed ? 'checked' : ''} onchange="window.toggleSubtask('${id}', '${taskId}', '${subId}', ${!sub.completed})">
-                        <span style="flex:1; text-decoration: ${sub.completed ? 'line-through' : 'none'}; color: ${sub.completed ? '#94a3b8' : 'inherit'}">${sub.name}</span>
-                        <i class="fas fa-times" style="cursor:pointer; color:#ef4444; opacity:0.5;" onclick="window.deleteSubtask('${id}', '${taskId}', '${subId}')"></i>
-                    </li>
-                `;
-            });
+    if(container) {
+        container.innerHTML = '';
+        if (!project.tasks) {
+            container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">No tasks yet. Create one above.</div>';
+            return;
         }
 
-        div.innerHTML = `
-            <div class="task-header" onclick="window.toggleTaskBody('${taskId}')">
-                <div class="task-title">
-                    <span class="task-badge badge-${task.priority.toLowerCase()}">${task.priority}</span>
-                    <span>${task.name}</span>
-                </div>
-                <div style="display:flex; align-items:center; gap:15px;">
-                    <small style="color:#6b7280;">${task.due}</small>
-                    <div style="width:100px; height:6px; background:#e2e8f0; border-radius:3px; overflow:hidden;">
-                        <div style="width:${taskProgress}%; background:${progressColor}; height:100%;"></div>
-                    </div>
-                    <button class="btn-text" style="color:var(--danger)" onclick="event.stopPropagation(); window.deleteTask('${id}', '${taskId}')"><i class="fas fa-trash"></i></button>
-                </div>
-            </div>
+        Object.keys(project.tasks).forEach(taskId => {
+            const task = project.tasks[taskId];
+            const taskProgress = calculateTaskProgress(task);
+            const progressColor = taskProgress === 100 ? 'var(--success)' : 'var(--primary)';
             
-            <div id="task-body-${taskId}" class="task-body">
-                <ul class="subtask-list">${subtasksHtml}</ul>
-                <div class="add-subtask-row">
-                    <input type="text" class="input-subtask-new" placeholder="+ Add subtask & Enter" 
-                    onkeypress="if(event.key === 'Enter') window.addSubtask(this, '${id}', '${taskId}')">
+            const div = document.createElement('div');
+            div.className = 'task-block';
+            
+            let subtasksHtml = '';
+            if (task.subtasks) {
+                Object.keys(task.subtasks).forEach(subId => {
+                    const sub = task.subtasks[subId];
+                    subtasksHtml += `
+                        <li class="subtask-item">
+                            <input type="checkbox" ${sub.completed ? 'checked' : ''} onchange="window.toggleSubtask('${id}', '${taskId}', '${subId}', ${!sub.completed})">
+                            <span style="flex:1; text-decoration: ${sub.completed ? 'line-through' : 'none'}; color: ${sub.completed ? '#94a3b8' : 'inherit'}">${sub.name}</span>
+                            <i class="fas fa-times" style="cursor:pointer; color:#ef4444; opacity:0.5;" onclick="window.deleteSubtask('${id}', '${taskId}', '${subId}')"></i>
+                        </li>
+                    `;
+                });
+            }
+
+            div.innerHTML = `
+                <div class="task-header" onclick="window.toggleTaskBody('${taskId}')">
+                    <div class="task-title">
+                        <span class="task-badge badge-${task.priority.toLowerCase()}">${task.priority}</span>
+                        <span>${task.name}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <small style="color:#6b7280;">${task.due}</small>
+                        <div style="width:100px; height:6px; background:#e2e8f0; border-radius:3px; overflow:hidden;">
+                            <div style="width:${taskProgress}%; background:${progressColor}; height:100%;"></div>
+                        </div>
+                        <button class="btn-text" style="color:var(--danger)" onclick="event.stopPropagation(); window.deleteTask('${id}', '${taskId}')"><i class="fas fa-trash"></i></button>
+                    </div>
                 </div>
-            </div>
-        `;
-        els.tasksContainer.appendChild(div);
+                
+                <div id="task-body-${taskId}" class="task-body">
+                    <ul class="subtask-list">${subtasksHtml}</ul>
+                    <div class="add-subtask-row">
+                        <input type="text" class="input-subtask-new" placeholder="+ Add subtask & Enter" 
+                        onkeypress="if(event.key === 'Enter') window.addSubtask(this, '${id}', '${taskId}')">
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+}
+
+const btnCreateProj = document.getElementById('btnCreateProject');
+if(btnCreateProj) {
+    btnCreateProj.addEventListener('click', () => {
+        const name = document.getElementById('inpProjName').value;
+        const client = document.getElementById('inpProjClient').value;
+        const start = document.getElementById('inpProjStart').value;
+        const end = document.getElementById('inpProjEnd').value;
+        const status = document.getElementById('inpProjStatus').value;
+
+        if (!name) return alert("Project Name Required!");
+
+        const newProjectRef = push(ref(db, `users/${currentUser.uid}/projects`));
+        set(newProjectRef, {
+            name, client, start, end, status,
+            createdAt: Date.now()
+        }).then(() => {
+            closeModal('modalProject');
+            document.getElementById('inpProjName').value = '';
+        });
     });
 }
 
-document.getElementById('btnCreateProject').addEventListener('click', () => {
-    const name = document.getElementById('inpProjName').value;
-    const client = document.getElementById('inpProjClient').value;
-    const start = document.getElementById('inpProjStart').value;
-    const end = document.getElementById('inpProjEnd').value;
-    const status = document.getElementById('inpProjStatus').value;
+const btnCreateTask = document.getElementById('btnCreateTask');
+if(btnCreateTask) {
+    btnCreateTask.addEventListener('click', () => {
+        const name = document.getElementById('inpTaskName').value;
+        const priority = document.getElementById('inpTaskPriority').value;
+        const due = document.getElementById('inpTaskDue').value;
 
-    if (!name) return alert("Project Name Required!");
+        if (!name || !currentProjectId) return;
 
-    const newProjectRef = push(ref(db, `users/${currentUser.uid}/projects`));
-    set(newProjectRef, {
-        name, client, start, end, status,
-        createdAt: Date.now()
-    }).then(() => {
-        closeModal('modalProject');
-        document.getElementById('inpProjName').value = '';
+        const newTaskRef = push(ref(db, `users/${currentUser.uid}/projects/${currentProjectId}/tasks`));
+        set(newTaskRef, {
+            name, priority, due
+        }).then(() => {
+            closeModal('modalTask');
+            document.getElementById('inpTaskName').value = '';
+        });
     });
-});
-
-document.getElementById('btnCreateTask').addEventListener('click', () => {
-    const name = document.getElementById('inpTaskName').value;
-    const priority = document.getElementById('inpTaskPriority').value;
-    const due = document.getElementById('inpTaskDue').value;
-
-    if (!name || !currentProjectId) return;
-
-    const newTaskRef = push(ref(db, `users/${currentUser.uid}/projects/${currentProjectId}/tasks`));
-    set(newTaskRef, {
-        name, priority, due
-    }).then(() => {
-        closeModal('modalTask');
-        document.getElementById('inpTaskName').value = '';
-    });
-});
+}
 
 window.addSubtask = (input, projId, taskId) => {
     if (!input.value.trim()) return;

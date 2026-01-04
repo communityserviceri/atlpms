@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atlantis Project Manager - Cloud</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Menghubungkan ke Atlantis Cloud...</p>
+    </div>
+
+    <section id="view-login" class="login-container">
+        <div class="login-box">
+            <div class="brand-large">
+                <i class="fas fa-water"></i> Atlantis
+            </div>
+            <p class="login-subtitle">Professional Project Management</p>
+            
+            <form id="loginForm" onsubmit="event.preventDefault();">
+                <div class="form-group">
+                    <label>Email</label>
+                    <div class="input-icon">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="email" placeholder="name@company.com" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="input-icon">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" placeholder="••••••••" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary full-width btn-login">
+                    LOGIN SYSTEM
+                </button>
+            </form>
+            <div id="loginError" class="error-msg"></div>
+        </div>
+    </section>
+
+    <div id="app-container" class="app-container" style="display: none;">
+        <aside class="sidebar">
+            <div class="brand">
+                <i class="fas fa-water"></i> Atlantis <span class="badge-pro">PRO</span>
+            </div>
+            <nav>
+                <button id="btnNavDashboard" class="nav-btn active">
+                    <i class="fas fa-home"></i> Dashboard
+                </button>
+                <div class="nav-divider">PROYEK SAYA</div>
+                <div id="sidebarProjectList">
+                    </div>
+            </nav>
+            <div class="user-profile">
+                <div class="avatar" id="userAvatar">U</div>
+                <div class="info">
+                    <span id="userEmailDisplay">User</span>
+                    <small id="userIdDisplay">ID: ...</small>
+                </div>
+                <button id="btnLogout" class="btn-logout"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            
+            <section id="view-dashboard" class="view-section active">
+                <header class="top-bar">
+                    <div>
+                        <h2>Dashboard</h2>
+                        <p class="subtitle">Overview Performa & Proyek</p>
+                    </div>
+                    <button class="btn-primary" id="btnOpenModalProject">
+                        <i class="fas fa-plus"></i> Buat Proyek Baru
+                    </button>
+                </header>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Proyek</h3>
+                        <span id="statTotalProjects">0</span>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Sedang Berjalan</h3>
+                        <span id="statActive">0</span>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Selesai</h3>
+                        <span id="statCompleted">0</span>
+                    </div>
+                </div>
+
+                <div id="projectsGrid" class="projects-grid"></div>
+            </section>
+
+            <section id="view-project-detail" class="view-section" style="display: none;">
+                <header class="top-bar">
+                    <div class="header-left">
+                        <button id="btnBackToDash" class="btn-text"><i class="fas fa-arrow-left"></i> Kembali</button>
+                        <h2 id="detailProjectTitle">Loading...</h2>
+                        <span id="detailProjectStatus" class="p-status">Status</span>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-danger-outline" id="btnDeleteProject"><i class="fas fa-trash"></i> Hapus Proyek</button>
+                        <button class="btn-primary" id="btnOpenModalTask">
+                            <i class="fas fa-plus-circle"></i> Tambah Task
+                        </button>
+                    </div>
+                </header>
+
+                <div class="project-meta-bar">
+                    <div class="progress-wrapper">
+                        <span>Overall Progress</span>
+                        <div class="progress-bg"><div id="detailProjectProgress" class="progress-fill" style="width: 0%"></div></div>
+                        <span id="detailProjectPercent">0%</span>
+                    </div>
+                    <div class="meta-dates">
+                        <i class="far fa-calendar"></i> <span id="detailProjectDates">-</span>
+                    </div>
+                </div>
+
+                <div id="tasksContainer" class="tasks-container"></div>
+            </section>
+
+        </main>
+    </div>
+
+    <div id="modalProject" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Project Baru</h3>
+                <span class="close" id="closeModalProject">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nama Proyek</label>
+                    <input type="text" id="inpProjName" placeholder="Contoh: Upgrade Server Kantor">
+                </div>
+                <div class="form-group">
+                    <label>Klien / Departemen</label>
+                    <input type="text" id="inpProjClient" placeholder="Contoh: Finance Dept">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" id="inpProjStart">
+                    </div>
+                    <div class="form-group">
+                        <label>Deadline</label>
+                        <input type="date" id="inpProjEnd">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Status Awal</label>
+                    <select id="inpProjStatus">
+                        <option value="Planning">Planning</option>
+                        <option value="On Progress">On Progress</option>
+                    </select>
+                </div>
+                <button class="btn-primary full-width" id="btnCreateProject">Create Project</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalTask" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Tambah Task Utama</h3>
+                <span class="close" id="closeModalTask">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nama Task (Milestone)</label>
+                    <input type="text" id="inpTaskName" placeholder="Contoh: Desain Database">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Prioritas</label>
+                        <select id="inpTaskPriority">
+                            <option value="High">High</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="Low">Low</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Estimasi Selesai</label>
+                        <input type="date" id="inpTaskDue">
+                    </div>
+                </div>
+                <button class="btn-primary full-width" id="btnCreateTask">Simpan Task</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>

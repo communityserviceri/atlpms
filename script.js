@@ -16,9 +16,14 @@ const firebaseConfig = {
     measurementId: "G-CFX55RSCRP"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth(app);
+let app, db, auth;
+try {
+    app = initializeApp(firebaseConfig);
+    db = getDatabase(app);
+    auth = getAuth(app);
+} catch (error) {
+    console.error(error);
+}
 
 let currentUser = null;
 let currentProjectId = null;
@@ -44,28 +49,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    const btnLogout = document.getElementById('btnLogout');
-    if(btnLogout) btnLogout.addEventListener('click', () => {
-        signOut(auth).then(() => window.location.reload());
-    });
-
-    const btnNavDash = document.getElementById('btnNavDashboard');
-    if(btnNavDash) btnNavDash.addEventListener('click', () => switchView('dashboard'));
-    
-    const btnBack = document.getElementById('btnBackToDash');
-    if(btnBack) btnBack.addEventListener('click', () => switchView('dashboard'));
+    bindClick('btnLogout', () => signOut(auth).then(() => window.location.reload()));
+    bindClick('btnNavDashboard', () => switchView('dashboard'));
+    bindClick('btnBackToDash', () => switchView('dashboard'));
     
     setupModalListeners();
+    setupFormListeners();
 });
 
-function showLogin() {
-    const loading = document.getElementById('loadingOverlay');
-    const viewLogin = document.getElementById('view-login');
-    const viewApp = document.getElementById('app-container');
+function bindClick(id, handler) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', handler);
+}
 
-    if(loading) loading.style.display = 'none';
-    if(viewLogin) viewLogin.style.display = 'flex';
-    if(viewApp) viewApp.style.display = 'none';
+function showLogin() {
+    toggleDisplay('loadingOverlay', 'none');
+    toggleDisplay('view-login', 'flex');
+    toggleDisplay('app-container', 'none');
 }
 
 function handleLogin() {
@@ -80,19 +80,15 @@ function handleLogin() {
     const password = passField.value;
 
     if(errorMsg) errorMsg.innerText = "";
-    
     if(btn) {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
         btn.disabled = true;
     }
 
     signInWithEmailAndPassword(auth, email, password)
-        .then(() => {
-            // Success handled by onAuthStateChanged
-        })
         .catch((error) => {
             console.error(error);
-            if(errorMsg) errorMsg.innerText = "Login failed. Check your credentials.";
+            if(errorMsg) errorMsg.innerText = "Login failed";
             if(btn) {
                 btn.innerHTML = 'Sign In';
                 btn.disabled = false;
@@ -101,13 +97,9 @@ function handleLogin() {
 }
 
 function initApp(user) {
-    const loading = document.getElementById('loadingOverlay');
-    const viewLogin = document.getElementById('view-login');
-    const viewApp = document.getElementById('app-container');
-
-    if(viewLogin) viewLogin.style.display = 'none';
-    if(viewApp) viewApp.style.display = 'flex';
-    if(loading) loading.style.display = 'none';
+    toggleDisplay('view-login', 'none');
+    toggleDisplay('app-container', 'flex');
+    toggleDisplay('loadingOverlay', 'none');
 
     const emailDisp = document.getElementById('userEmailDisplay');
     const idDisp = document.getElementById('userIdDisplay');
@@ -122,7 +114,9 @@ function initApp(user) {
     onValue(userProjectsRef, (snapshot) => {
         const data = snapshot.val();
         projectsData = data || {};
+        
         renderDashboard();
+        
         if(currentProjectId && projectsData[currentProjectId]) {
             renderProjectDetail(currentProjectId);
         } else if (currentProjectId && !projectsData[currentProjectId]) {
@@ -162,13 +156,9 @@ function renderDashboard() {
         ...projectsData[key]
     }));
 
-    const statTotal = document.getElementById('statTotalProjects');
-    const statActive = document.getElementById('statActive');
-    const statCompleted = document.getElementById('statCompleted');
-
-    if(statTotal) statTotal.innerText = projectsArray.length;
-    if(statActive) statActive.innerText = projectsArray.filter(p => p.status === 'On Progress').length;
-    if(statCompleted) statCompleted.innerText = projectsArray.filter(p => Math.round(calculateProgress(p)) === 100).length;
+    updateText('statTotalProjects', projectsArray.length);
+    updateText('statActive', projectsArray.filter(p => p.status === 'On Progress').length);
+    updateText('statCompleted', projectsArray.filter(p => Math.round(calculateProgress(p)) === 100).length);
 
     projectsArray.forEach(p => {
         const progress = calculateProgress(p);
@@ -189,7 +179,7 @@ function renderDashboard() {
         card.innerHTML = `
             <span class="p-status ${statusClass}">${p.status}</span>
             <h3 class="p-title">${p.name}</h3>
-            <span class="p-client">${p.client}</span>
+            <span class="p-client">${p.client || 'Internal'}</span>
             <div class="progress-bg">
                 <div class="progress-fill" style="width: ${progress}%"></div>
             </div>
@@ -215,28 +205,35 @@ function renderProjectDetail(id) {
     const progress = calculateProgress(project);
     const container = document.getElementById('tasksContainer');
 
-    const title = document.getElementById('detailProjectTitle');
-    const status = document.getElementById('detailProjectStatus');
-    const dates = document.getElementById('detailProjectDates');
-    const pct = document.getElementById('detailProjectPercent');
+    updateText('detailProjectTitle', project.name);
+    updateText('detailProjectDates', `${project.start || '-'} s/d ${project.end || '-'}`);
+    updateText('detailProjectPercent', `${Math.round(progress)}%`);
+    
     const bar = document.getElementById('detailProjectProgress');
+    if(bar) bar.style.width = `${progress}%`;
 
-    if(title) title.innerText = project.name;
+    const status = document.getElementById('detailProjectStatus');
     if(status) {
         status.innerText = project.status;
         status.className = `p-status ${project.status === 'On Progress' ? 'on-progress' : 'planning'}`;
     }
-    if(dates) dates.innerText = `${project.start} - ${project.end}`;
-    if(pct) pct.innerText = `${Math.round(progress)}%`;
-    if(bar) bar.style.width = `${progress}%`;
 
     const btnDel = document.getElementById('btnDeleteProject');
-    if(btnDel) btnDel.onclick = () => deleteProject(id);
+    if(btnDel) {
+        btnDel.onclick = () => deleteProject(id);
+    }
 
     if(container) {
         container.innerHTML = '';
         if (!project.tasks) {
-            container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">No tasks yet. Create one above.</div>';
+            container.innerHTML = `
+                <div style="text-align:center; padding:60px 20px; color:#94a3b8; display:flex; flex-direction:column; align-items:center;">
+                    <i class="fas fa-clipboard-list" style="font-size:3rem; margin-bottom:15px; opacity:0.3;"></i>
+                    <p>No tasks yet.</p>
+                    <button class="btn-text" onclick="document.getElementById('modalTask').style.display='flex'" style="color:var(--primary); margin-top:10px;">
+                        + Create First Task
+                    </button>
+                </div>`;
             return;
         }
 
@@ -254,9 +251,14 @@ function renderProjectDetail(id) {
                     const sub = task.subtasks[subId];
                     subtasksHtml += `
                         <li class="subtask-item">
-                            <input type="checkbox" ${sub.completed ? 'checked' : ''} onchange="window.toggleSubtask('${id}', '${taskId}', '${subId}', ${!sub.completed})">
-                            <span style="flex:1; text-decoration: ${sub.completed ? 'line-through' : 'none'}; color: ${sub.completed ? '#94a3b8' : 'inherit'}">${sub.name}</span>
-                            <i class="fas fa-times" style="cursor:pointer; color:#ef4444; opacity:0.5;" onclick="window.deleteSubtask('${id}', '${taskId}', '${subId}')"></i>
+                            <input type="checkbox" ${sub.completed ? 'checked' : ''} 
+                                onchange="window.toggleSubtask('${id}', '${taskId}', '${subId}', this.checked)">
+                            <span style="flex:1; text-decoration: ${sub.completed ? 'line-through' : 'none'}; 
+                                color: ${sub.completed ? '#94a3b8' : 'inherit'}; transition: all 0.2s;">
+                                ${sub.name}
+                            </span>
+                            <i class="fas fa-times" style="cursor:pointer; color:#ef4444; opacity:0.5;" 
+                                onclick="window.deleteSubtask('${id}', '${taskId}', '${subId}')"></i>
                         </li>
                     `;
                 });
@@ -265,22 +267,25 @@ function renderProjectDetail(id) {
             div.innerHTML = `
                 <div class="task-header" onclick="window.toggleTaskBody('${taskId}')">
                     <div class="task-title">
-                        <span class="task-badge badge-${task.priority.toLowerCase()}">${task.priority}</span>
+                        <span class="task-badge badge-${(task.priority || 'Medium').toLowerCase()}">${task.priority || 'Medium'}</span>
                         <span>${task.name}</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:15px;">
-                        <small style="color:#6b7280;">${task.due}</small>
+                        <small style="color:#6b7280;">${task.due || '-'}</small>
                         <div style="width:100px; height:6px; background:#e2e8f0; border-radius:3px; overflow:hidden;">
-                            <div style="width:${taskProgress}%; background:${progressColor}; height:100%;"></div>
+                            <div style="width:${taskProgress}%; background:${progressColor}; height:100%; transition: width 0.3s;"></div>
                         </div>
-                        <button class="btn-text" style="color:var(--danger)" onclick="event.stopPropagation(); window.deleteTask('${id}', '${taskId}')"><i class="fas fa-trash"></i></button>
+                        <button class="btn-text" style="color:var(--danger)" 
+                            onclick="event.stopPropagation(); window.deleteTask('${id}', '${taskId}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </div>
                 
                 <div id="task-body-${taskId}" class="task-body">
                     <ul class="subtask-list">${subtasksHtml}</ul>
                     <div class="add-subtask-row">
-                        <input type="text" class="input-subtask-new" placeholder="+ Add subtask & Enter" 
+                        <input type="text" class="input-subtask-new" placeholder="+ Add subtask & Enter..." 
                         onkeypress="if(event.key === 'Enter') window.addSubtask(this, '${id}', '${taskId}')">
                     </div>
                 </div>
@@ -290,16 +295,34 @@ function renderProjectDetail(id) {
     }
 }
 
-const btnCreateProj = document.getElementById('btnCreateProject');
-if(btnCreateProj) {
-    btnCreateProj.addEventListener('click', () => {
-        const name = document.getElementById('inpProjName').value;
-        const client = document.getElementById('inpProjClient').value;
-        const start = document.getElementById('inpProjStart').value;
-        const end = document.getElementById('inpProjEnd').value;
-        const status = document.getElementById('inpProjStatus').value;
+function calculateProgress(project) {
+    if (!project || !project.tasks) return 0;
+    const tasks = Object.values(project.tasks);
+    if (tasks.length === 0) return 0;
 
-        if (!name) return alert("Project Name Required!");
+    let totalProgress = 0;
+    tasks.forEach(task => totalProgress += calculateTaskProgress(task));
+    return totalProgress / tasks.length;
+}
+
+function calculateTaskProgress(task) {
+    if (!task || !task.subtasks) return 0;
+    const subs = Object.values(task.subtasks);
+    if (subs.length === 0) return 0;
+
+    const completed = subs.filter(s => s.completed).length;
+    return (completed / subs.length) * 100;
+}
+
+function setupFormListeners() {
+    bindClick('btnCreateProject', () => {
+        const name = getValue('inpProjName');
+        const client = getValue('inpProjClient');
+        const start = getValue('inpProjStart');
+        const end = getValue('inpProjEnd');
+        const status = getValue('inpProjStatus');
+
+        if (!name) return alert("Name Required");
 
         const newProjectRef = push(ref(db, `users/${currentUser.uid}/projects`));
         set(newProjectRef, {
@@ -308,18 +331,16 @@ if(btnCreateProj) {
         }).then(() => {
             closeModal('modalProject');
             document.getElementById('inpProjName').value = '';
+            document.getElementById('inpProjClient').value = '';
         });
     });
-}
 
-const btnCreateTask = document.getElementById('btnCreateTask');
-if(btnCreateTask) {
-    btnCreateTask.addEventListener('click', () => {
-        const name = document.getElementById('inpTaskName').value;
-        const priority = document.getElementById('inpTaskPriority').value;
-        const due = document.getElementById('inpTaskDue').value;
+    bindClick('btnCreateTask', () => {
+        const name = getValue('inpTaskName');
+        const priority = getValue('inpTaskPriority');
+        const due = getValue('inpTaskDue');
 
-        if (!name || !currentProjectId) return;
+        if (!name || !currentProjectId) return alert("Task Name Required");
 
         const newTaskRef = push(ref(db, `users/${currentUser.uid}/projects/${currentProjectId}/tasks`));
         set(newTaskRef, {
@@ -361,30 +382,13 @@ window.deleteTask = (projId, taskId) => {
 };
 
 window.deleteProject = (projId) => {
-    if(confirm('Delete entire project? Cannot be undone.')) {
+    if(confirm('Delete Project?')) {
         const projRef = ref(db, `users/${currentUser.uid}/projects/${projId}`);
-        remove(projRef);
+        remove(projRef).then(() => {
+            switchView('dashboard');
+        });
     }
 };
-
-function calculateProgress(project) {
-    if (!project.tasks) return 0;
-    const tasks = Object.values(project.tasks);
-    if (tasks.length === 0) return 0;
-
-    let totalProgress = 0;
-    tasks.forEach(task => totalProgress += calculateTaskProgress(task));
-    return totalProgress / tasks.length;
-}
-
-function calculateTaskProgress(task) {
-    if (!task.subtasks) return 0;
-    const subs = Object.values(task.subtasks);
-    if (subs.length === 0) return 0;
-
-    const completed = subs.filter(s => s.completed).length;
-    return (completed / subs.length) * 100;
-}
 
 window.toggleTaskBody = (taskId) => {
     const el = document.getElementById(`task-body-${taskId}`);
@@ -392,20 +396,33 @@ window.toggleTaskBody = (taskId) => {
 };
 
 function setupModalListeners() {
-    const btnProj = document.getElementById('btnOpenModalProject');
-    if(btnProj) btnProj.onclick = () => document.getElementById('modalProject').style.display = "flex";
-    
-    const closeProj = document.getElementById('closeModalProject');
-    if(closeProj) closeProj.onclick = () => closeModal('modalProject');
-    
-    const btnTask = document.getElementById('btnOpenModalTask');
-    if(btnTask) btnTask.onclick = () => document.getElementById('modalTask').style.display = "flex";
-    
-    const closeTask = document.getElementById('closeModalTask');
-    if(closeTask) closeTask.onclick = () => closeModal('modalTask');
+    bindClick('btnOpenModalProject', () => toggleDisplay('modalProject', 'flex'));
+    bindClick('closeModalProject', () => closeModal('modalProject'));
+    bindClick('btnOpenModalTask', () => toggleDisplay('modalTask', 'flex'));
+    bindClick('closeModalTask', () => closeModal('modalTask'));
+
+    window.onclick = (event) => {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = "none";
+        }
+    };
 }
 
 function closeModal(id) {
+    toggleDisplay(id, 'none');
+}
+
+function toggleDisplay(id, val) {
     const el = document.getElementById(id);
-    if(el) el.style.display = "none";
+    if(el) el.style.display = val;
+}
+
+function updateText(id, text) {
+    const el = document.getElementById(id);
+    if(el) el.innerText = text;
+}
+
+function getValue(id) {
+    const el = document.getElementById(id);
+    return el ? el.value : '';
 }

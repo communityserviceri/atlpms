@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atlantis Project Manager - Cloud</title>
+    <title>Atlantis Project Manager</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,53 +12,55 @@
 
     <div id="loadingOverlay" class="loading-overlay">
         <div class="spinner"></div>
-        <p>Menghubungkan ke Atlantis Cloud...</p>
     </div>
 
-    <section id="view-login" class="login-container">
-        <div class="shape shape-1"></div>
-        <div class="shape shape-2"></div>
-
-        <div class="login-box glass-effect">
-            <div class="login-header">
-                <div class="brand-logo">
-                    <i class="fas fa-water"></i>
+    <section id="view-login" class="login-split-view">
+        
+        <div class="login-brand-side">
+            <div class="brand-content">
+                <div class="brand-logo-large">
+                    <i class="fas fa-water"></i> Atlantis
                 </div>
-                <h1>Welcome Back</h1>
-                <p class="login-subtitle">Masuk untuk mengelola proyek Atlantis Anda</p>
+                <h2>Manage Projects with<br>Confidence & Clarity.</h2>
+                <p>Enterprise grade project management for modern teams. Secure, Fast, Reliable.</p>
+                <div class="brand-footer">
+                    &copy; 2026 Atlantis Tech.
+                </div>
             </div>
-            
-            <form id="loginForm" onsubmit="event.preventDefault();">
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-envelope"></i>
-                        <input type="email" id="email" placeholder="name@atlantis.com" required autocomplete="email">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
-                    </div>
-                </div>
-                
-                <div class="form-footer">
-                    <label class="remember-me">
-                        <input type="checkbox"> Ingat saya
-                    </label>
-                    <a href="#" class="forgot-pass">Lupa password?</a>
+            <div class="brand-pattern"></div>
+        </div>
+
+        <div class="login-form-side">
+            <div class="form-wrapper">
+                <div class="form-header">
+                    <h3>Sign In</h3>
+                    <p class="subtitle">Welcome back, please enter your details.</p>
                 </div>
 
-                <button type="submit" class="btn-primary full-width btn-login glow-effect">
-                    ACCESS DASHBOARD <i class="fas fa-arrow-right" style="margin-left:8px; font-size:0.8em;"></i>
-                </button>
-            </form>
-            <div id="loginError" class="error-msg"></div>
-            
-            <div class="login-footer-text">
-                &copy; 2026 Atlantis Project Manager. Secure Cloud.
+                <form id="loginForm" onsubmit="event.preventDefault();">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="email" class="input-modern" placeholder="name@company.com" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="password" class="input-modern" placeholder="••••••••" required>
+                    </div>
+
+                    <div class="form-actions">
+                        <label class="checkbox-container">
+                            <input type="checkbox"> Remember me
+                        </label>
+                        <a href="#" class="link-forgot">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="btn-primary full-width btn-xl">
+                        Sign In
+                    </button>
+                </form>
+                
+                <div id="loginError" class="error-msg"></div>
             </div>
         </div>
     </section>
@@ -73,8 +75,7 @@
                     <i class="fas fa-home"></i> Dashboard
                 </button>
                 <div class="nav-divider">PROYEK SAYA</div>
-                <div id="sidebarProjectList">
-                    </div>
+                <div id="sidebarProjectList"></div>
             </nav>
             <div class="user-profile">
                 <div class="avatar" id="userAvatar">U</div>
@@ -87,7 +88,6 @@
         </aside>
 
         <main class="main-content">
-            
             <section id="view-dashboard" class="view-section active">
                 <header class="top-bar">
                     <div>
@@ -145,7 +145,6 @@
 
                 <div id="tasksContainer" class="tasks-container"></div>
             </section>
-
         </main>
     </div>
 
@@ -158,25 +157,25 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label>Nama Proyek</label>
-                    <input type="text" id="inpProjName" placeholder="Contoh: Upgrade Server Kantor">
+                    <input type="text" id="inpProjName" class="input-modern">
                 </div>
                 <div class="form-group">
                     <label>Klien / Departemen</label>
-                    <input type="text" id="inpProjClient" placeholder="Contoh: Finance Dept">
+                    <input type="text" id="inpProjClient" class="input-modern">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Start Date</label>
-                        <input type="date" id="inpProjStart">
+                        <input type="date" id="inpProjStart" class="input-modern">
                     </div>
                     <div class="form-group">
                         <label>Deadline</label>
-                        <input type="date" id="inpProjEnd">
+                        <input type="date" id="inpProjEnd" class="input-modern">
                     </div>
                 </div>
                 <div class="form-group">
                     <label>Status Awal</label>
-                    <select id="inpProjStatus">
+                    <select id="inpProjStatus" class="input-modern">
                         <option value="Planning">Planning</option>
                         <option value="On Progress">On Progress</option>
                     </select>
@@ -194,13 +193,13 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label>Nama Task (Milestone)</label>
-                    <input type="text" id="inpTaskName" placeholder="Contoh: Desain Database">
+                    <label>Nama Task</label>
+                    <input type="text" id="inpTaskName" class="input-modern">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Prioritas</label>
-                        <select id="inpTaskPriority">
+                        <select id="inpTaskPriority" class="input-modern">
                             <option value="High">High</option>
                             <option value="Medium" selected>Medium</option>
                             <option value="Low">Low</option>
@@ -208,7 +207,7 @@
                     </div>
                     <div class="form-group">
                         <label>Estimasi Selesai</label>
-                        <input type="date" id="inpTaskDue">
+                        <input type="date" id="inpTaskDue" class="input-modern">
                     </div>
                 </div>
                 <button class="btn-primary full-width" id="btnCreateTask">Simpan Task</button>
